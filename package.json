@@ -1,5 +1,5 @@
 {
-  "name": "safejs",
+  "name": "@decipad_org/safejs",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -13,5 +13,21 @@
     "vite": "^4.3.2",
     "vite-plugin-dts": "^2.3.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "description": "This repo intends to safely run JavaScript into a website using web workers",
+  "main": "dist/safejs.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/decipad/safejs.git"
+  },
+  "keywords": [
+    "codeblock",
+    "safe",
+    "javscript"
+  ],
+  "author": "Decipad",
+  "bugs": {
+    "url": "https://github.com/decipad/safejs/issues"
+  },
+  "homepage": "https://github.com/decipad/safejs#readme"
 }
