@@ -8,6 +8,7 @@ import WorkerFile from "./worker.ts?worker";
  * There is also a whitelist which allows the web worker to define what functions are allowed (for example decipads usecase needs `fetch`, but you might not want to allow this).
  */
 export class SafeJs {
+  // @ts-ignore - Typescript doesnt seem to know `this.worker` is initialised in a private function.
   private worker: Worker;
   private channel: MessageChannel;
   private executing: boolean;
@@ -49,6 +50,7 @@ export class SafeJs {
     };
   }
 
+  // initialised the worked, used by constructor and when execution of worker takes too long.
   private initWorker() {
     this.worker = new WorkerFile();
     this.worker.postMessage(this.MAX_WORKER_RETURN, [this.channel.port2]);
