@@ -10,6 +10,7 @@ import WorkerFile from "./worker.ts?worker";
 export class SafeJs {
   // @ts-ignore - Typescript doesnt seem to know `this.worker` is initialised in a private function.
   private worker: Worker;
+  // @ts-ignore - Typescript doesnt seem to know `this.channel` is initialised in a private function.
   private channel: MessageChannel;
   private executing: boolean;
   private errorMessageCallback: (err: Error) => void;

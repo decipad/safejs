@@ -1,12 +1,15 @@
 lockfileVersion: '6.0'
 
 devDependencies:
+  '@types/node':
+    specifier: ^20.1.4
+    version: 20.1.4
   typescript:
     specifier: ^5.0.2
     version: 5.0.2
   vite:
     specifier: ^4.3.2
-    version: 4.3.2
+    version: 4.3.2(@types/node@20.1.4)
 
 packages:
 
@@ -208,6 +211,10 @@ packages:
     dev: true
     optional: true
 
+  /@types/node@20.1.4:
+    resolution: {integrity: sha512-At4pvmIOki8yuwLtd7BNHl3CiWNbtclUbNtScGx4OHfBd4/oWoJC8KRCIxXwkdndzhxOsPXihrsOoydxBjlE9Q==}
+    dev: true
+
   /esbuild@0.17.19:
     resolution: {integrity: sha512-XQ0jAPFkK/u3LcVRcvVHQcTIqD6E2H1fvZMA5dQPSOWb3suUbWbfbRf94pjc0bNzRYLfIrDRQXr7X+LHIm5oHw==}
     engines: {node: '>=12'}
@@ -284,7 +291,7 @@ packages:
     hasBin: true
     dev: true
 
-  /vite@4.3.2:
+  /vite@4.3.2(@types/node@20.1.4):
     resolution: {integrity: sha512-9R53Mf+TBoXCYejcL+qFbZde+eZveQLDYd9XgULILLC1a5ZwPaqgmdVpL8/uvw2BM/1TzetWjglwm+3RO+xTyw==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
@@ -309,6 +316,7 @@ packages:
       terser:
         optional: true
     dependencies:
+      '@types/node': 20.1.4
       esbuild: 0.17.19
       postcss: 8.4.23
       rollup: 3.21.7
