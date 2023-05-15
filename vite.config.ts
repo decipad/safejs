@@ -1,7 +1,13 @@
+import dts from "vite-plugin-dts";
 import { resolve } from "path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  plugins: [
+    dts({
+      insertTypesEntry: true,
+    }),
+  ],
   build: {
     lib: {
       // Could also be a dictionary or array of multiple entry points
