@@ -1,6 +1,3 @@
-// Load Web Workers
-import WorkerFile from "./worker.ts?worker";
-
 /**
  * SafeJs is a way to run safe user-provided JavaScript code in a web worker.
  * The web worker has no access to DOM or window object, see [MDN Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API), and we go even further by re-writing the `get` method of many web worker function to throw error, making them unusable.
@@ -54,7 +51,7 @@ export class SafeJs {
 
   // initialised the worked, used by constructor and when execution of worker takes too long.
   private initWorker() {
-    this.worker = new WorkerFile();
+    this.worker = new Worker(new URL("./worker.ts", import.meta.url));
     this.channel = new MessageChannel();
     this.worker.postMessage(this.MAX_WORKER_RETURN, [this.channel.port2]);
     this.channel.port1.onmessage = this.handleMessages;

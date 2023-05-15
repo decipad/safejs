@@ -44,13 +44,15 @@ const whitelist = {
 Object.getOwnPropertyNames(self).forEach((prop) => {
   if (prop in whitelist) return;
 
-  Object.defineProperty(self, prop, {
-    get: function () {
-      port.postMessage("stop using " + prop);
-      throw new Error("Security Exception - cannot access: " + prop);
-    },
-    configurable: false,
-  });
+  try {
+    Object.defineProperty(self, prop, {
+      get: function () {
+        port.postMessage("stop using " + prop);
+        throw new Error("Security Exception - cannot access: " + prop);
+      },
+      configurable: false,
+    });
+  } catch (e) {}
 });
 
 // @ts-ignore
@@ -105,9 +107,9 @@ function removeProto(currentProto: any) {
 }
 
 // @ts-ignore
-removeProto(self.__proto__);
+// removeProto(self.__proto__);
 // @ts-ignore
-removeProto(self.__proto__.__proto__);
+// removeProto(self.__proto__.__proto__);
 
 let port: MessagePort;
 
