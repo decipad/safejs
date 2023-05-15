@@ -29,5 +29,6 @@
   "bugs": {
     "url": "https://github.com/decipad/safejs/issues"
   },
-  "homepage": "https://github.com/decipad/safejs#readme"
+  "homepage": "https://github.com/decipad/safejs#readme",
+  "files": ["./dist/*"]
 }
