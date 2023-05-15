@@ -13,6 +13,7 @@ export class SafeJs {
   private channel: MessageChannel;
   private executing: boolean;
   private errorMessageCallback: (err: Error) => void;
+  private handleMessages: (msg: any) => void;
 
   private MAX_WORKER_RETURN: number = 20000;
   private MAX_EXECUTING_TIME: number = 10000;
@@ -27,7 +28,6 @@ export class SafeJs {
     maxWorkerReturn?: number,
     maxExecutingTime?: number
   ) {
-    this.channel = new MessageChannel();
     this.executing = false;
     this.errorMessageCallback = workerErrorCallback;
 
@@ -39,21 +39,24 @@ export class SafeJs {
       this.MAX_EXECUTING_TIME = maxExecutingTime;
     }
 
-    this.initWorker();
-
-    this.channel.port1.onmessage = (msg) => {
+    this.handleMessages = (msg) => {
+      this.executing = false;
       if (msg.data instanceof Error) {
         this.errorMessageCallback(msg.data);
       } else if (typeof msg.data === "string") {
         workerMessageCallback(msg.data);
       }
     };
+
+    this.initWorker();
   }
 
   // initialised the worked, used by constructor and when execution of worker takes too long.
   private initWorker() {
     this.worker = new WorkerFile();
+    this.channel = new MessageChannel();
     this.worker.postMessage(this.MAX_WORKER_RETURN, [this.channel.port2]);
+    this.channel.port1.onmessage = this.handleMessages;
   }
 
   /**
