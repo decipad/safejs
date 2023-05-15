@@ -122,10 +122,14 @@ function userCodeWrapper(code: string) {
   `;
 }
 
-const MAX_RETURN = 20000;
+let MAX_RETURN = 20000;
 
 self.onmessage = async (msg) => {
   if (msg.ports.length > 0 && port == null) {
+    if (typeof msg.data === "number") {
+      MAX_RETURN = msg.data;
+    }
+
     console.log("Setting up the port");
     port = msg.ports[0];
     port.postMessage("yooo from worker");
@@ -137,19 +141,23 @@ self.onmessage = async (msg) => {
   )();
 
   if (!result) {
-    port.postMessage("Nothing returned");
+    port.postMessage(undefined);
     return;
   }
 
   try {
     const parsedResult = JSON.stringify(result);
     if (parsedResult.length > MAX_RETURN) {
-      port.postMessage("Result was too long");
+      port.postMessage(
+        new Error(
+          "Worker result is past the max allowed length (Try increasing the length when creating the worker object)"
+        )
+      );
       return;
     }
 
-    port.postMessage(result);
+    port.postMessage(parsedResult);
   } catch (e) {
-    port.postMessage("JSON stringify went kaput " + e);
+    port.postMessage(new Error("JSON stringify didnt work"));
   }
 };
