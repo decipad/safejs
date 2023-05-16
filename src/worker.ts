@@ -80,8 +80,6 @@ function initialize(extraWhitelist: Array<string>) {
     })(Array.prototype.join),
   });
 
-  console.log(self);
-
   const arProt = Array.prototype;
 
   // @ts-ignore

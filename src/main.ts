@@ -6,7 +6,7 @@ interface SafeJsOptions {
   extraWhitelist: Array<string>;
 }
 
-type WorkerInitMessage = Omit<SafeJsOptions, "maxExecutingTime">;
+export type WorkerInitMessage = Omit<SafeJsOptions, "maxExecutingTime">;
 
 /**
  * SafeJs is a way to run safe user-provided JavaScript code in a web worker.
