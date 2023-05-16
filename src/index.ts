@@ -9,10 +9,7 @@ const myWorker = new SafeJs(
   (msg) => {
     output.innerText = msg;
   },
-  (err) => console.error(err),
-  {
-    extraWhitelist: ["Map"],
-  }
+  (err) => console.error(err)
 );
 
 execute.onclick = () => {

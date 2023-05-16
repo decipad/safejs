@@ -39,7 +39,7 @@ export class SafeJs {
       maxWorkerReturn,
       maxExecutingTime,
       extraWhitelist,
-    }: Readonly<Partial<SafeJsOptions>>
+    }: Readonly<Partial<SafeJsOptions>> = {}
   ) {
     this.executing = false;
     this.errorMessageCallback = workerErrorCallback;
