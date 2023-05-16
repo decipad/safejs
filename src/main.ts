@@ -1,5 +1,13 @@
 import MyWorker from "./worker?worker&inline";
 
+interface SafeJsOptions {
+  maxWorkerReturn: number;
+  maxExecutingTime: number;
+  extraWhitelist: Array<string>;
+}
+
+type WorkerInitMessage = Omit<SafeJsOptions, "maxExecutingTime">;
+
 /**
  * SafeJs is a way to run safe user-provided JavaScript code in a web worker.
  * The web worker has no access to DOM or window object, see [MDN Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API), and we go even further by re-writing the `get` method of many web worker function to throw error, making them unusable.
@@ -18,6 +26,8 @@ export class SafeJs {
   private MAX_WORKER_RETURN: number = 20000;
   private MAX_EXECUTING_TIME: number = 10000;
 
+  private extraWhitelist: Array<string> = [];
+
   /**
    * @param workerMessageCallback
    * @param maxWorkerReturn the max size of the stringified return from the worker
@@ -25,8 +35,11 @@ export class SafeJs {
   constructor(
     workerMessageCallback: (res: string) => void,
     workerErrorCallback: (err: Error) => void,
-    maxWorkerReturn?: number,
-    maxExecutingTime?: number
+    {
+      maxWorkerReturn,
+      maxExecutingTime,
+      extraWhitelist,
+    }: Readonly<Partial<SafeJsOptions>>
   ) {
     this.executing = false;
     this.errorMessageCallback = workerErrorCallback;
@@ -37,6 +50,10 @@ export class SafeJs {
 
     if (maxExecutingTime) {
       this.MAX_EXECUTING_TIME = maxExecutingTime;
+    }
+
+    if (extraWhitelist) {
+      this.extraWhitelist = extraWhitelist;
     }
 
     this.handleMessages = (msg) => {
@@ -55,7 +72,13 @@ export class SafeJs {
   private initWorker() {
     this.worker = new MyWorker();
     this.channel = new MessageChannel();
-    this.worker.postMessage(this.MAX_WORKER_RETURN, [this.channel.port2]);
+
+    const firstMessage: WorkerInitMessage = {
+      maxWorkerReturn: this.MAX_WORKER_RETURN,
+      extraWhitelist: this.extraWhitelist,
+    };
+
+    this.worker.postMessage(firstMessage, [this.channel.port2]);
     this.channel.port1.onmessage = this.handleMessages;
   }
 
