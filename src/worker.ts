@@ -39,10 +39,9 @@ function initialize(extraWhitelist: Array<string>) {
     Math: 1,
     NaN: 1,
     undefined: 1,
+    Map: 1,
 
     Intl: 1,
-    console: 1,
-    setTimeout: 1,
     constructor: 1,
     fetch: 1,
 
