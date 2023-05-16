@@ -20,6 +20,11 @@ export class SafeJs {
   // @ts-ignore - Typescript doesnt seem to know `this.channel` is initialised in a private function.
   private channel: MessageChannel;
   private executing: boolean;
+
+  // Is the worker still alive?
+  // Constrols whether or not we can re-create the worker.
+  private isAlive: boolean = false;
+
   private errorMessageCallback: (err: Error) => void;
   private handleMessages: (msg: any) => void;
 
@@ -68,8 +73,13 @@ export class SafeJs {
     this.initWorker();
   }
 
-  // initialised the worked, used by constructor and when execution of worker takes too long.
-  private initWorker() {
+  /**
+   * initialised the worked, used by constructor and when execution of worker takes too long.
+   * Initially ran by the constructor, so no need to run unless you use @method kill.
+   */
+  public initWorker() {
+    if (this.isAlive) return;
+
     this.worker = new MyWorker();
     this.channel = new MessageChannel();
 
@@ -80,6 +90,8 @@ export class SafeJs {
 
     this.worker.postMessage(firstMessage, [this.channel.port2]);
     this.channel.port1.onmessage = this.handleMessages;
+
+    this.isAlive = true;
   }
 
   /**
@@ -87,6 +99,15 @@ export class SafeJs {
    * @returns nothing, because the `workerMessageCallback` will be used to return the result.
    */
   async execute(code: string) {
+    if (!this.isAlive) {
+      this.errorMessageCallback(
+        new Error(
+          "Dead worker - This worker has been killed, create another class"
+        )
+      );
+      return;
+    }
+
     this.executing = true;
 
     // Prevents the worker from running for too long.
@@ -98,10 +119,22 @@ export class SafeJs {
             "Worker took too long to complete (Try increasing the MAX_EXECUTING_TIME)"
           )
         );
+        this.isAlive = false;
         this.initWorker();
       }
     }, this.MAX_EXECUTING_TIME);
 
     this.worker.postMessage(code);
+  }
+
+  /**
+   * Kills the worker, and theefore makes the instance of this
+   * class unusable.
+   *
+   * You can use the @method initWorker to recreate a worker.
+   */
+  kill() {
+    this.isAlive = false;
+    this.worker.terminate();
   }
 }
