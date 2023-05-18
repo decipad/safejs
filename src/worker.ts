@@ -54,7 +54,7 @@ function initialize(extraWhitelist: Array<string>) {
     try {
       Object.defineProperty(self, prop, {
         get: function () {
-          port.postMessage("stop using " + prop);
+          port.postMessage({ type: 'error', message: "stop using " + prop });
           throw new Error("Security Exception - cannot access: " + prop);
         },
         configurable: false,
@@ -102,7 +102,7 @@ function initialize(extraWhitelist: Array<string>) {
       try {
         Object.defineProperty(currentProto, prop, {
           get: () => {
-            port.postMessage("stop using " + prop);
+            port.postMessage({ type: 'error', message: "stop using " + prop});
             throw new Error("Security Exception - cannot access: " + prop);
           },
           configurable: false,
@@ -129,7 +129,7 @@ self.onmessage = async (msg) => {
     initialize(initMessage.extraWhitelist);
 
     port = msg.ports[0];
-    port.postMessage("Successfully setup the web worker");
+    port.postMessage({ type: 'log', message: "Successfully setup the web worker", });
     return;
   }
 
@@ -138,23 +138,23 @@ self.onmessage = async (msg) => {
   )();
 
   if (!result) {
-    port.postMessage(undefined);
+    port.postMessage({ type: undefined, message: undefined });
     return;
   }
 
   try {
     const parsedResult = JSON.stringify(result);
     if (parsedResult.length > MAX_RETURN) {
-      port.postMessage(
-        new Error(
+      port.postMessage({ type: 'error',
+        message: new Error(
           "Worker result is past the max allowed length (Try increasing the length when creating the worker object)"
-        )
+        )}
       );
       return;
     }
 
-    port.postMessage(parsedResult);
+    port.postMessage({ type: 'success', message: parsedResult });
   } catch (e) {
-    port.postMessage(new Error("JSON stringify didnt work"));
+    port.postMessage({ type: 'error', message: new Error("JSON stringify didnt work")} );
   }
 };
