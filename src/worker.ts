@@ -29,7 +29,6 @@ function initialize(extraWhitelist: Array<string>) {
     decodeURI: 1,
     decodeURIComponent: 1,
     encodeURI: 1,
-    encodeURIComponent: 1,
     isFinite: 1,
     isNaN: 1,
     parseFloat: 1,
@@ -54,7 +53,7 @@ function initialize(extraWhitelist: Array<string>) {
     try {
       Object.defineProperty(self, prop, {
         get: function () {
-          port.postMessage({ type: 'error', message: "stop using " + prop });
+          port.postMessage("stop using " + prop);
           throw new Error("Security Exception - cannot access: " + prop);
         },
         configurable: false,
@@ -102,7 +101,7 @@ function initialize(extraWhitelist: Array<string>) {
       try {
         Object.defineProperty(currentProto, prop, {
           get: () => {
-            port.postMessage({ type: 'error', message: "stop using " + prop});
+            port.postMessage("stop using " + prop);
             throw new Error("Security Exception - cannot access: " + prop);
           },
           configurable: false,
@@ -121,6 +120,7 @@ function initialize(extraWhitelist: Array<string>) {
 
 let port: MessagePort;
 let MAX_RETURN = 20000;
+let result;
 
 self.onmessage = async (msg) => {
   if (msg.ports.length > 0 && port == null) {
@@ -129,32 +129,38 @@ self.onmessage = async (msg) => {
     initialize(initMessage.extraWhitelist);
 
     port = msg.ports[0];
-    port.postMessage({ type: 'log', message: "Successfully setup the web worker", });
-    return;
-  }
-
-  const result = await Object.getPrototypeOf(async function () {}).constructor(
-    msg.data
-  )();
-
-  if (!result) {
-    port.postMessage({ type: undefined, message: undefined });
+    port.postMessage("Successfully setup the web worker");
     return;
   }
 
   try {
+    result = await Object.getPrototypeOf(async function () {}).constructor(
+      msg.data
+    )();
+
+    if (!result) {
+      port.postMessage(undefined);
+      return;
+    }
+  }
+  catch (e) {
+    port.postMessage(e)
+    return;
+  }
+
+
+  try {
     const parsedResult = JSON.stringify(result);
     if (parsedResult.length > MAX_RETURN) {
-      port.postMessage({ type: 'error',
-        message: new Error(
+      port.postMessage( new Error(
           "Worker result is past the max allowed length (Try increasing the length when creating the worker object)"
-        )}
+        )
       );
       return;
     }
 
-    port.postMessage({ type: 'success', message: parsedResult });
+    port.postMessage(parsedResult);
   } catch (e) {
-    port.postMessage({ type: 'error', message: new Error("JSON stringify didnt work")} );
+    port.postMessage(new Error("JSON stringify didnt work"));
   }
 };

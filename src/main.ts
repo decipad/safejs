@@ -62,6 +62,7 @@ export class SafeJs {
     }
 
     this.handleMessages = (msg) => {
+
       this.executing = false;
       if (msg.data instanceof Error) {
         this.errorMessageCallback(msg.data);
