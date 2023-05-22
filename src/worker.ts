@@ -128,7 +128,6 @@ self.onmessage = async (msg) => {
     initialize(initMessage.extraWhitelist);
 
     port = msg.ports[0];
-    port.postMessage("Successfully setup the web worker");
     return;
   }
 
