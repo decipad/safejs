@@ -29,7 +29,6 @@ function initialize(extraWhitelist: Array<string>) {
     decodeURI: 1,
     decodeURIComponent: 1,
     encodeURI: 1,
-    encodeURIComponent: 1,
     isFinite: 1,
     isNaN: 1,
     parseFloat: 1,
@@ -133,12 +132,20 @@ self.onmessage = async (msg) => {
     return;
   }
 
-  const result = await Object.getPrototypeOf(async function () {}).constructor(
-    msg.data
-  )();
-
   try {
-    const parsedResult = JSON.stringify(result);
+    const result = await Object.getPrototypeOf(
+      async function () {}
+    ).constructor(msg.data)();
+
+    // JSON.stringify can yield undefined when result is undefined
+    const parsedResult: string | undefined = JSON.stringify(result);
+
+    if (!parsedResult) {
+      // JSON.parse fails on `undefined`, but not on `null`.
+      port.postMessage("null");
+      return;
+    }
+
     if (parsedResult.length > MAX_RETURN) {
       port.postMessage(
         new Error(
@@ -150,6 +157,7 @@ self.onmessage = async (msg) => {
 
     port.postMessage(parsedResult);
   } catch (e) {
-    port.postMessage(new Error("JSON stringify didnt work"));
+    port.postMessage(e);
+    return;
   }
 };
