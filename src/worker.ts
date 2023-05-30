@@ -54,7 +54,6 @@ function initialize(extraWhitelist: Array<string>) {
     try {
       Object.defineProperty(self, prop, {
         get: function () {
-          port.postMessage("stop using " + prop);
           throw new Error("Security Exception - cannot access: " + prop);
         },
         configurable: false,
@@ -129,7 +128,6 @@ function initialize(extraWhitelist: Array<string>) {
       try {
         Object.defineProperty(currentProto, prop, {
           get: () => {
-            port.postMessage("stop using " + prop);
             throw new Error("Security Exception - cannot access: " + prop);
           },
           configurable: false,
