@@ -1,4 +1,4 @@
-import { WorkerInitMessage } from "./main";
+import { WorkerInitMessage, WorkerMessageType } from "./main";
 
 function initialize(extraWhitelist: Array<string>) {
   const extraWhitelistObject = {} as any;
@@ -106,11 +106,17 @@ function initialize(extraWhitelist: Array<string>) {
   console.log = function (arg) {
     try {
       if (typeof arg === "string") {
-        port.postMessage(arg);
+        port.postMessage({ type: "internal-safe-js-log", message: arg });
       } else if (typeof arg === "number") {
-        port.postMessage(arg.toString());
+        port.postMessage({
+          type: "internal-safe-js-log",
+          message: arg.toString(),
+        });
       } else if (typeof arg === "object") {
-        port.postMessage(JSON.parse(arg));
+        port.postMessage({
+          type: "internal-safe-js-log",
+          message: JSON.parse(arg),
+        });
       } else {
         port.postMessage(new Error("Cannot log this type"));
       }
@@ -161,6 +167,24 @@ self.onmessage = async (msg) => {
     const result = await Object.getPrototypeOf(
       async function () {}
     ).constructor(msg.data)();
+
+    // Is a console.log message
+    if (
+      typeof result === "object" &&
+      "type" in result &&
+      typeof result.type === "string" &&
+      result.type === "internal-safe-js-log" &&
+      "message" in result &&
+      typeof result.message === "string" &&
+      Object.keys(result).length === 2
+    ) {
+      const returnMessage: WorkerMessageType = {
+        type: "internal-safe-js-log",
+        message: result.message,
+      };
+
+      port.postMessage(JSON.stringify(returnMessage));
+    }
 
     // JSON.stringify can yield undefined when result is undefined
     const parsedResult: string | undefined = JSON.stringify(result);

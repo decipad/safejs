@@ -8,6 +8,12 @@ interface SafeJsOptions {
 
 export type WorkerInitMessage = Omit<SafeJsOptions, "maxExecutingTime">;
 
+export interface WorkerMessageType {
+  /** log is a result of using console.log */
+  type: "result" | "internal-safe-js-log";
+  message: string;
+}
+
 /**
  * SafeJs is a way to run safe user-provided JavaScript code in a web worker.
  * The web worker has no access to DOM or window object, see [MDN Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API), and we go even further by re-writing the `get` method of many web worker function to throw error, making them unusable.
@@ -62,8 +68,8 @@ export class SafeJs {
     }
 
     this.handleMessages = (msg) => {
-
       this.executing = false;
+      console.log(msg);
       if (msg.data instanceof Error) {
         this.errorMessageCallback(msg.data);
       } else if (typeof msg.data === "string") {
