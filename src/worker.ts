@@ -43,6 +43,7 @@ function initialize(extraWhitelist: Array<string>) {
     Intl: 1,
     constructor: 1,
     fetch: 1,
+    console: 1,
 
     ...extraWhitelistObject,
   };
@@ -92,6 +93,33 @@ function initialize(extraWhitelist: Array<string>) {
   // @ts-ignore
   Array.prototype = arProt;
 
+  Object.getOwnPropertyNames(console).forEach((prop) => {
+    if (prop !== "log") {
+      Object.defineProperty(console, prop, {
+        configurable: false,
+        get: function () {
+          throw new Error("Security Exception - cannot access: " + prop);
+        },
+      });
+    }
+  });
+
+  console.log = function (arg) {
+    try {
+      if (typeof arg === "string") {
+        port.postMessage(arg);
+      } else if (typeof arg === "number") {
+        port.postMessage(arg.toString());
+      } else if (typeof arg === "object") {
+        port.postMessage(JSON.parse(arg));
+      } else {
+        port.postMessage(new Error("Cannot log this type"));
+      }
+    } catch (e) {
+      port.postMessage(new Error("console.log went wrong somewhere"));
+    }
+  };
+
   function removeProto(currentProto: any) {
     Object.getOwnPropertyNames(currentProto).forEach((prop) => {
       // Just for testing
@@ -118,7 +146,7 @@ function initialize(extraWhitelist: Array<string>) {
   removeProto(self.__proto__.__proto__);
 }
 
-let port: MessagePort;
+var port: MessagePort;
 let MAX_RETURN = 20000;
 
 self.onmessage = async (msg) => {

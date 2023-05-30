@@ -7,7 +7,7 @@ const execute = document.getElementById("execute") as HTMLButtonElement;
 
 const myWorker = new SafeJs(
   (msg) => {
-    output.innerText = msg;
+    output.innerHTML += `<span>${msg}</span>`;
   },
   (err) => console.error(err)
 );
