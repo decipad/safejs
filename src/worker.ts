@@ -108,11 +108,14 @@ function initialize(
     }
   });
 
-  let consoleTimeout = new Date().getTime();
+  let consoleCalled = 0;
 
   console.log = function (arg) {
-    if (consoleTimeout + CONSOLE_TIMEOUT > new Date().getTime()) return;
-    consoleTimeout = new Date().getTime();
+    consoleCalled++;
+    if (consoleCalled > MAX_CONSOLE)
+      throw new Error(
+        "Security Exception - console.log limited to " + MAX_CONSOLE + " calls"
+      );
 
     try {
       if (typeof arg === "string") {
@@ -156,7 +159,7 @@ function initialize(
 
 let port: MessagePort;
 let MAX_RETURN = 20000;
-let CONSOLE_TIMEOUT = 200;
+let MAX_CONSOLE = 200;
 
 self.onmessage = async (msg) => {
   function workerMessages(m: string | Error) {
@@ -174,7 +177,7 @@ self.onmessage = async (msg) => {
   if (msg.ports.length > 0 && port == null) {
     const initMessage = msg.data as WorkerInitMessage;
     MAX_RETURN = initMessage.maxWorkerReturn;
-    CONSOLE_TIMEOUT = initMessage.consoleLogTimeout;
+    MAX_CONSOLE = initMessage.maxConsoleLog;
     port = msg.ports[0];
 
     initialize(initMessage.extraWhitelist, workerMessages);

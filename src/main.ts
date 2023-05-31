@@ -3,7 +3,7 @@ import MyWorker from "./worker?worker&inline";
 interface SafeJsOptions {
   maxWorkerReturn: number;
   maxExecutingTime: number;
-  consoleLogTimeout: number;
+  maxConsoleLog: number;
   extraWhitelist: Array<string>;
 }
 
@@ -37,7 +37,7 @@ export class SafeJs {
 
   private MAX_WORKER_RETURN: number = 20000;
   private MAX_EXECUTING_TIME: number = 10000;
-  private consoleLogTimeout: number = 200;
+  private maxConsoleLog: number = 200;
 
   private extraWhitelist: Array<string> = [];
 
@@ -52,7 +52,7 @@ export class SafeJs {
       maxWorkerReturn,
       maxExecutingTime,
       extraWhitelist,
-      consoleLogTimeout,
+      maxConsoleLog,
     }: Readonly<Partial<SafeJsOptions>> = {}
   ) {
     this.executing = false;
@@ -70,8 +70,8 @@ export class SafeJs {
       this.extraWhitelist = extraWhitelist;
     }
 
-    if (consoleLogTimeout) {
-      this.consoleLogTimeout = consoleLogTimeout;
+    if (maxConsoleLog) {
+      this.maxConsoleLog = maxConsoleLog;
     }
 
     this.handleMessages = (msg) => {
@@ -111,7 +111,7 @@ export class SafeJs {
     const firstMessage: WorkerInitMessage = {
       maxWorkerReturn: this.MAX_WORKER_RETURN,
       extraWhitelist: this.extraWhitelist,
-      consoleLogTimeout: this.consoleLogTimeout,
+      maxConsoleLog: this.maxConsoleLog,
     };
 
     this.worker.postMessage(firstMessage, [this.channel.port2]);
