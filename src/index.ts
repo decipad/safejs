@@ -15,7 +15,7 @@ const myWorker = new SafeJs(
   },
   (err) => console.error(err),
   {
-    maxExecutingTime: 1000000,
+    maxExecutingTime: 5000,
   }
 );
 

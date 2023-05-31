@@ -46,6 +46,8 @@ function initialize(
     Intl: 1,
     constructor: 1,
     fetch: 1,
+
+    // Special, because we strip most of it
     console: 1,
 
     ...extraWhitelistObject,
@@ -106,7 +108,12 @@ function initialize(
     }
   });
 
+  let consoleTimeout = new Date().getTime();
+
   console.log = function (arg) {
+    if (consoleTimeout + CONSOLE_TIMEOUT > new Date().getTime()) return;
+    consoleTimeout = new Date().getTime();
+
     try {
       if (typeof arg === "string") {
         consoleCallback(arg);
@@ -149,6 +156,7 @@ function initialize(
 
 let port: MessagePort;
 let MAX_RETURN = 20000;
+let CONSOLE_TIMEOUT = 200;
 
 self.onmessage = async (msg) => {
   function workerMessages(m: string | Error) {
@@ -166,6 +174,7 @@ self.onmessage = async (msg) => {
   if (msg.ports.length > 0 && port == null) {
     const initMessage = msg.data as WorkerInitMessage;
     MAX_RETURN = initMessage.maxWorkerReturn;
+    CONSOLE_TIMEOUT = initMessage.consoleLogTimeout;
     port = msg.ports[0];
 
     initialize(initMessage.extraWhitelist, workerMessages);

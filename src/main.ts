@@ -3,6 +3,7 @@ import MyWorker from "./worker?worker&inline";
 interface SafeJsOptions {
   maxWorkerReturn: number;
   maxExecutingTime: number;
+  consoleLogTimeout: number;
   extraWhitelist: Array<string>;
 }
 
@@ -36,6 +37,7 @@ export class SafeJs {
 
   private MAX_WORKER_RETURN: number = 20000;
   private MAX_EXECUTING_TIME: number = 10000;
+  private consoleLogTimeout: number = 200;
 
   private extraWhitelist: Array<string> = [];
 
@@ -50,6 +52,7 @@ export class SafeJs {
       maxWorkerReturn,
       maxExecutingTime,
       extraWhitelist,
+      consoleLogTimeout,
     }: Readonly<Partial<SafeJsOptions>> = {}
   ) {
     this.executing = false;
@@ -67,15 +70,24 @@ export class SafeJs {
       this.extraWhitelist = extraWhitelist;
     }
 
+    if (consoleLogTimeout) {
+      this.consoleLogTimeout = consoleLogTimeout;
+    }
+
     this.handleMessages = (msg) => {
-      this.executing = false;
       if (msg.data instanceof Error) {
+        this.executing = false;
         this.errorMessageCallback(msg.data);
       } else if (typeof msg.data === "string") {
         try {
           const workerMsg: WorkerMessageType = JSON.parse(msg.data);
+          if (workerMsg.type !== "internal-safe-js-log") {
+            this.executing = false;
+          }
+
           workerMessageCallback(workerMsg);
         } catch (_e) {
+          this.executing = false;
           this.errorMessageCallback(
             new Error("Unable to parse message from worker")
           );
@@ -99,6 +111,7 @@ export class SafeJs {
     const firstMessage: WorkerInitMessage = {
       maxWorkerReturn: this.MAX_WORKER_RETURN,
       extraWhitelist: this.extraWhitelist,
+      consoleLogTimeout: this.consoleLogTimeout,
     };
 
     this.worker.postMessage(firstMessage, [this.channel.port2]);
