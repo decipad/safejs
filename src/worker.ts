@@ -152,11 +152,15 @@ let MAX_RETURN = 20000;
 
 self.onmessage = async (msg) => {
   function workerMessages(m: string | Error) {
-    const message: WorkerMessageType = {
-      type: "internal-safe-js-log",
-      message: m,
-    };
-    port.postMessage(JSON.stringify(message));
+    if (typeof m === "string") {
+      const message: WorkerMessageType = {
+        type: "internal-safe-js-log",
+        message: m,
+      };
+      port.postMessage(JSON.stringify(message));
+    } else {
+      port.postMessage(m);
+    }
   }
 
   if (msg.ports.length > 0 && port == null) {
