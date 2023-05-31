@@ -126,11 +126,7 @@ export class SafeJs {
    */
   async execute(code: string) {
     if (!this.isAlive) {
-      this.errorMessageCallback(
-        new Error(
-          "Dead worker - This worker has been killed, create another class"
-        )
-      );
+      this.errorMessageCallback(new Error("Web worker has been terminated"));
       return;
     }
 
@@ -141,9 +137,7 @@ export class SafeJs {
       if (this.executing) {
         this.worker.terminate();
         this.errorMessageCallback(
-          new Error(
-            "Worker took too long to complete (Try increasing the MAX_EXECUTING_TIME)"
-          )
+          new Error("Web worker took too long to complete")
         );
         this.isAlive = false;
         this.initWorker();
@@ -154,7 +148,7 @@ export class SafeJs {
   }
 
   /**
-   * Kills the worker, and theefore makes the instance of this
+   * Kills the worker, and therefore makes the instance of this
    * class unusable.
    *
    * You can use the @method initWorker to recreate a worker.
