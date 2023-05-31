@@ -199,7 +199,11 @@ self.onmessage = async (msg) => {
       return;
     }
 
-    port.postMessage(parsedResult);
+    const returnMessage: WorkerMessageType = {
+      type: "result",
+      message: parsedResult,
+    };
+    port.postMessage(JSON.stringify(returnMessage));
   } catch (e) {
     port.postMessage(e);
     return;

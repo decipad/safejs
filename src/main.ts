@@ -44,7 +44,7 @@ export class SafeJs {
    * @param maxWorkerReturn the max size of the stringified return from the worker
    */
   constructor(
-    workerMessageCallback: (res: string) => void,
+    workerMessageCallback: (res: WorkerMessageType) => void,
     workerErrorCallback: (err: Error) => void,
     {
       maxWorkerReturn,
@@ -69,11 +69,17 @@ export class SafeJs {
 
     this.handleMessages = (msg) => {
       this.executing = false;
-      console.log(msg);
       if (msg.data instanceof Error) {
         this.errorMessageCallback(msg.data);
       } else if (typeof msg.data === "string") {
-        workerMessageCallback(msg.data);
+        try {
+          const workerMsg: WorkerMessageType = JSON.parse(msg.data);
+          workerMessageCallback(workerMsg);
+        } catch (_e) {
+          this.errorMessageCallback(
+            new Error("Unable to parse message from worker")
+          );
+        }
       }
     };
 

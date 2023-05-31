@@ -1,4 +1,4 @@
-import { SafeJs, WorkerMessageType } from "./main";
+import { SafeJs } from "./main";
 import "./style.css";
 
 const input = document.getElementById("input") as HTMLTextAreaElement;
@@ -7,11 +7,10 @@ const execute = document.getElementById("execute") as HTMLButtonElement;
 
 const myWorker = new SafeJs(
   (msg) => {
-    const parsedMsg: WorkerMessageType = JSON.parse(msg);
-    if (parsedMsg.type === "internal-safe-js-log") {
-      output.innerHTML += `<span>CONSOLE.LOG: ${parsedMsg.message}</span>`;
+    if (msg.type === "internal-safe-js-log") {
+      output.innerHTML += `<span>CONSOLE.LOG: ${msg.message}</span>`;
     } else {
-      output.innerHTML += `<span>${parsedMsg.message}</span>`;
+      output.innerHTML += `<span>${msg.message}</span>`;
     }
   },
   (err) => console.error(err),
