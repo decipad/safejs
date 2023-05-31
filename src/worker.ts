@@ -1,6 +1,9 @@
 import { WorkerInitMessage, WorkerMessageType } from "./main";
 
-function initialize(extraWhitelist: Array<string>) {
+function initialize(
+  extraWhitelist: Array<string>,
+  consoleCallback: (m: string | Error) => void
+) {
   const extraWhitelistObject = {} as any;
   for (const v of extraWhitelist) {
     extraWhitelistObject[v] = 1;
@@ -106,22 +109,16 @@ function initialize(extraWhitelist: Array<string>) {
   console.log = function (arg) {
     try {
       if (typeof arg === "string") {
-        port.postMessage({ type: "internal-safe-js-log", message: arg });
+        consoleCallback(arg);
       } else if (typeof arg === "number") {
-        port.postMessage({
-          type: "internal-safe-js-log",
-          message: arg.toString(),
-        });
+        consoleCallback(arg.toString());
       } else if (typeof arg === "object") {
-        port.postMessage({
-          type: "internal-safe-js-log",
-          message: JSON.parse(arg),
-        });
+        consoleCallback(JSON.stringify(arg));
       } else {
-        port.postMessage(new Error("Cannot log this type"));
+        consoleCallback(new Error("Cannot log this type"));
       }
     } catch (e) {
-      port.postMessage(new Error("console.log went wrong somewhere"));
+      consoleCallback(new Error("console.log went wrong somewhere"));
     }
   };
 
@@ -150,16 +147,24 @@ function initialize(extraWhitelist: Array<string>) {
   removeProto(self.__proto__.__proto__);
 }
 
-var port: MessagePort;
+let port: MessagePort;
 let MAX_RETURN = 20000;
 
 self.onmessage = async (msg) => {
+  function workerMessages(m: string | Error) {
+    const message: WorkerMessageType = {
+      type: "internal-safe-js-log",
+      message: m,
+    };
+    port.postMessage(JSON.stringify(message));
+  }
+
   if (msg.ports.length > 0 && port == null) {
     const initMessage = msg.data as WorkerInitMessage;
     MAX_RETURN = initMessage.maxWorkerReturn;
-    initialize(initMessage.extraWhitelist);
-
     port = msg.ports[0];
+
+    initialize(initMessage.extraWhitelist, workerMessages);
     return;
   }
 
@@ -168,30 +173,16 @@ self.onmessage = async (msg) => {
       async function () {}
     ).constructor(msg.data)();
 
-    // Is a console.log message
-    if (
-      typeof result === "object" &&
-      "type" in result &&
-      typeof result.type === "string" &&
-      result.type === "internal-safe-js-log" &&
-      "message" in result &&
-      typeof result.message === "string" &&
-      Object.keys(result).length === 2
-    ) {
-      const returnMessage: WorkerMessageType = {
-        type: "internal-safe-js-log",
-        message: result.message,
-      };
-
-      port.postMessage(JSON.stringify(returnMessage));
-    }
-
     // JSON.stringify can yield undefined when result is undefined
     const parsedResult: string | undefined = JSON.stringify(result);
 
     if (!parsedResult) {
       // JSON.parse fails on `undefined`, but not on `null`.
-      port.postMessage("null");
+      const returnMessage: WorkerMessageType = {
+        type: "result",
+        message: "null",
+      };
+      port.postMessage(JSON.stringify(returnMessage));
       return;
     }
 

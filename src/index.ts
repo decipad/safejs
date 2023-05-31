@@ -7,14 +7,17 @@ const execute = document.getElementById("execute") as HTMLButtonElement;
 
 const myWorker = new SafeJs(
   (msg) => {
-    console.log(msg);
     const parsedMsg: WorkerMessageType = JSON.parse(msg);
     if (parsedMsg.type === "internal-safe-js-log") {
       output.innerHTML += `<span>CONSOLE.LOG: ${parsedMsg.message}</span>`;
+    } else {
+      output.innerHTML += `<span>${parsedMsg.message}</span>`;
     }
-    output.innerHTML += `<span>${parsedMsg.message}</span>`;
   },
-  (err) => console.error(err)
+  (err) => console.error(err),
+  {
+    maxExecutingTime: 1000000,
+  }
 );
 
 execute.onclick = () => {
