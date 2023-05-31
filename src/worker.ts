@@ -111,18 +111,27 @@ function initialize(
   let consoleTimeout = new Date().getTime();
 
   console.log = function (arg) {
-    if (consoleTimeout + CONSOLE_TIMEOUT > new Date().getTime()) return;
+    while (consoleTimeout + CONSOLE_TIMEOUT > new Date().getTime());
     consoleTimeout = new Date().getTime();
 
     try {
-      if (typeof arg === "string") {
-        consoleCallback(arg);
-      } else if (typeof arg === "number") {
-        consoleCallback(arg.toString());
-      } else if (typeof arg === "object") {
-        consoleCallback(JSON.stringify(arg));
-      } else {
-        consoleCallback(new Error("Cannot log this type"));
+      switch (typeof arg) {
+        case "number":
+        case "string":
+        case "bigint":
+          consoleCallback(arg.toString());
+          break;
+        case "boolean":
+          consoleCallback(String(arg));
+          break;
+        case "undefined":
+          consoleCallback("null");
+          break;
+        case "object":
+          consoleCallback(JSON.stringify(arg));
+          break;
+        default:
+          consoleCallback(new Error("Cannot log this type"));
       }
     } catch (e) {
       consoleCallback(new Error("console.log went wrong somewhere"));
