@@ -9,11 +9,18 @@ interface SafeJsOptions {
 
 export type WorkerInitMessage = Omit<SafeJsOptions, "maxExecutingTime">;
 
-export interface WorkerMessageType {
-  /** log is a result of using console.log */
-  type: "result" | "internal-safe-js-log";
-  message: string;
+// Both result and logs will be JSON.stringified so they can be parsed by client.
+export interface ResultMessageType {
+  result: string;
+  logs: string[];
 }
+
+export interface ErrorMessageType {
+  result: Error;
+  logs: string[];
+}
+
+export type WorkerMessageType = ResultMessageType | ErrorMessageType;
 
 /**
  * SafeJs is a way to run safe user-provided JavaScript code in a web worker.
@@ -32,7 +39,7 @@ export class SafeJs {
   // Constrols whether or not we can re-create the worker.
   private isAlive: boolean = false;
 
-  private errorMessageCallback: (err: Error) => void;
+  private errorMessageCallback: (err: ErrorMessageType) => void;
   private handleMessages: (msg: any) => void;
 
   private MAX_WORKER_RETURN: number = 20000;
@@ -46,8 +53,8 @@ export class SafeJs {
    * @param maxWorkerReturn the max size of the stringified return from the worker
    */
   constructor(
-    workerMessageCallback: (res: WorkerMessageType) => void,
-    workerErrorCallback: (err: Error) => void,
+    workerMessageCallback: (res: ResultMessageType) => void,
+    workerErrorCallback: (err: ErrorMessageType) => void,
     {
       maxWorkerReturn,
       maxExecutingTime,
@@ -75,23 +82,22 @@ export class SafeJs {
     }
 
     this.handleMessages = (msg) => {
-      if (msg.data instanceof Error) {
+      console.log(msg);
+      try {
+        const workerMsg: WorkerMessageType = JSON.parse(msg.data);
         this.executing = false;
-        this.errorMessageCallback(msg.data);
-      } else if (typeof msg.data === "string") {
-        try {
-          const workerMsg: WorkerMessageType = JSON.parse(msg.data);
-          if (workerMsg.type !== "internal-safe-js-log") {
-            this.executing = false;
-          }
 
-          workerMessageCallback(workerMsg);
-        } catch (_e) {
-          this.executing = false;
-          this.errorMessageCallback(
-            new Error("Unable to parse message from worker")
-          );
+        if (typeof workerMsg.result === "string") {
+          workerMessageCallback(workerMsg as ResultMessageType);
+        } else {
+          this.errorMessageCallback(workerMsg as ErrorMessageType);
         }
+      } catch (_e) {
+        this.executing = false;
+        this.errorMessageCallback({
+          result: new Error("Unable to parse message from worker"),
+          logs: [],
+        });
       }
     };
 
@@ -126,7 +132,18 @@ export class SafeJs {
    */
   async execute(code: string) {
     if (!this.isAlive) {
-      this.errorMessageCallback(new Error("Web worker has been terminated"));
+      this.errorMessageCallback({
+        result: new Error("Web worker has been terminated"),
+        logs: [],
+      });
+      return;
+    }
+
+    if (this.executing) {
+      this.errorMessageCallback({
+        result: new Error("Worker is still executing, please wait"),
+        logs: [],
+      });
       return;
     }
 
@@ -136,9 +153,10 @@ export class SafeJs {
     setTimeout(() => {
       if (this.executing) {
         this.worker.terminate();
-        this.errorMessageCallback(
-          new Error("Web worker took too long to complete")
-        );
+        this.errorMessageCallback({
+          result: new Error("Web worker took too long to complete"),
+          logs: [],
+        });
         this.isAlive = false;
         this.initWorker();
       }

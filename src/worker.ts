@@ -108,15 +108,7 @@ function initialize(
     }
   });
 
-  let consoleCalled = 0;
-
   console.log = function (arg) {
-    consoleCalled++;
-    if (consoleCalled > MAX_CONSOLE)
-      throw new Error(
-        "Security Exception - console.log limited to " + MAX_CONSOLE + " calls"
-      );
-
     try {
       switch (typeof arg) {
         case "number":
@@ -169,17 +161,15 @@ function initialize(
 let port: MessagePort;
 let MAX_RETURN = 20000;
 let MAX_CONSOLE = 200;
+let logs: Array<string> = [];
 
 self.onmessage = async (msg) => {
+  logs = [];
   function workerMessages(m: string | Error) {
-    if (typeof m === "string") {
-      const message: WorkerMessageType = {
-        type: "internal-safe-js-log",
-        message: m,
-      };
-      port.postMessage(JSON.stringify(message));
+    if (logs.length > MAX_CONSOLE) {
+      logs.splice(-MAX_CONSOLE);
     } else {
-      port.postMessage(m);
+      logs.push(typeof m === "string" ? m : "error: " + m.message);
     }
   }
 
@@ -201,29 +191,23 @@ self.onmessage = async (msg) => {
     // JSON.stringify can yield undefined when result is undefined
     const parsedResult: string | undefined = JSON.stringify(result);
 
+    // Partial to allow for "typesafe" assignment of result parameter to string/error.
+    const returnMessage: Partial<WorkerMessageType> = {
+      logs: [],
+    };
+
     if (!parsedResult) {
       // JSON.parse fails on `undefined`, but not on `null`.
-      const returnMessage: WorkerMessageType = {
-        type: "result",
-        message: "null",
-      };
-      port.postMessage(JSON.stringify(returnMessage));
-      return;
-    }
-
-    if (parsedResult.length > MAX_RETURN) {
-      port.postMessage(
-        new Error(
-          "Worker result is past the max allowed length (Try increasing the length when creating the worker object)"
-        )
+      returnMessage.result = "null";
+    } else if (parsedResult.length > MAX_RETURN) {
+      returnMessage.result = new Error(
+        "Worker result is past the max allowed length (Try increasing the length when creating the worker object)"
       );
-      return;
+    } else {
+      returnMessage.result = parsedResult;
     }
 
-    const returnMessage: WorkerMessageType = {
-      type: "result",
-      message: parsedResult,
-    };
+    returnMessage.logs = logs.slice(-MAX_CONSOLE);
     port.postMessage(JSON.stringify(returnMessage));
   } catch (e) {
     port.postMessage(e);

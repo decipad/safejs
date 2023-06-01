@@ -7,10 +7,10 @@ const execute = document.getElementById("execute") as HTMLButtonElement;
 
 const myWorker = new SafeJs(
   (msg) => {
-    if (msg.type === "internal-safe-js-log") {
-      output.innerHTML += `<span>CONSOLE.LOG: ${msg.message}</span>`;
-    } else {
-      output.innerHTML += `<span>${msg.message}</span>`;
+    console.log(msg);
+    output.innerHTML += `<span>${msg.result}</span>`;
+    for (const log of msg.logs) {
+      output.innerHTML += `<span>LOG: ${log}</span>`;
     }
   },
   (err) => console.error(err),
