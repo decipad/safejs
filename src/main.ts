@@ -82,7 +82,6 @@ export class SafeJs {
     }
 
     this.handleMessages = (msg) => {
-      console.log(msg);
       try {
         const workerMsg: WorkerMessageType = JSON.parse(msg.data);
         this.executing = false;
