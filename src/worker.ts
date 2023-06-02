@@ -42,6 +42,7 @@ function initialize(
     NaN: 1,
     undefined: 1,
     Map: 1,
+    DOMParser: 1,
 
     Intl: 1,
     constructor: 1,
