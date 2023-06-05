@@ -91,10 +91,10 @@ export class SafeJs {
         } else {
           this.errorMessageCallback(workerMsg as ErrorMessageType);
         }
-      } catch (_e) {
+      } catch (err) {
         this.executing = false;
         this.errorMessageCallback({
-          result: new Error("Unable to parse message from worker"),
+          result: new Error("Unable to parse message from worker: " + err),
           logs: [],
         });
       }
