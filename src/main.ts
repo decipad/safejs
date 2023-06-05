@@ -22,11 +22,6 @@ export interface ErrorMessageType {
 
 export type WorkerMessageType = ResultMessageType | ErrorMessageType;
 
-export interface WorkerMessage {
-  code: string;
-  params?: object;
-}
-
 /**
  * SafeJs is a way to run safe user-provided JavaScript code in a web worker.
  * The web worker has no access to DOM or window object, see [MDN Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API), and we go even further by re-writing the `get` method of many web worker function to throw error, making them unusable.
@@ -96,10 +91,10 @@ export class SafeJs {
         } else {
           this.errorMessageCallback(workerMsg as ErrorMessageType);
         }
-      } catch (err) {
+      } catch (_e) {
         this.executing = false;
         this.errorMessageCallback({
-          result: new Error("Unable to parse message from worker: " + err),
+          result: new Error("Unable to parse message from worker"),
           logs: [],
         });
       }
@@ -134,7 +129,7 @@ export class SafeJs {
    * @param code - The actual JS you want to execute in the worker
    * @returns nothing, because the `workerMessageCallback` will be used to return the result.
    */
-  async execute(code: string, params?: object) {
+  async execute(code: string) {
     if (!this.isAlive) {
       this.errorMessageCallback({
         result: new Error("Web worker has been terminated"),
@@ -166,12 +161,7 @@ export class SafeJs {
       }
     }, this.MAX_EXECUTING_TIME);
 
-    const msg: WorkerMessage = {
-      code,
-      params,
-    };
-
-    this.worker.postMessage(msg);
+    this.worker.postMessage(code);
   }
 
   /**
