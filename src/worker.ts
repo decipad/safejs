@@ -1,4 +1,4 @@
-import { WorkerInitMessage, WorkerMessageType } from "./main";
+import { WorkerInitMessage, WorkerMessage, WorkerMessageType } from "./main";
 
 function initialize(
   extraWhitelist: Array<string>,
@@ -185,9 +185,11 @@ self.onmessage = async (msg) => {
   }
 
   try {
-    const result = await Object.getPrototypeOf(
-      async function () {}
-    ).constructor(msg.data)();
+    const workerMessage: WorkerMessage = msg.data;
+
+    const result = await Object.getPrototypeOf(async function () {})
+      .constructor(workerMessage.code)
+      .bind(workerMessage.params)();
 
     // JSON.stringify can yield undefined when result is undefined
     const parsedResult: string | undefined = JSON.stringify(result);
