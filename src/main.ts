@@ -5,7 +5,8 @@ interface SafeJsOptions {
   maxExecutingTime: number;
   maxConsoleLog: number;
   extraWhitelist: Array<string>;
-  setupFunction: () => void;
+
+  fetchProxyUrl: string | undefined;
 }
 
 export type WorkerInitMessage = Omit<SafeJsOptions, "maxExecutingTime">;
@@ -54,7 +55,7 @@ export class SafeJs implements SafeJsOptions {
   public maxExecutingTime: number = 20000;
   public maxConsoleLog: number = 200;
   public extraWhitelist: Array<string> = [];
-  public setupFunction: () => void = () => {};
+  public fetchProxyUrl: string | undefined;
 
   /**
    * @param workerMessageCallback
@@ -68,7 +69,7 @@ export class SafeJs implements SafeJsOptions {
       maxExecutingTime,
       extraWhitelist,
       maxConsoleLog,
-      setupFunction,
+      fetchProxyUrl,
     }: Readonly<Partial<SafeJsOptions>> = {}
   ) {
     this.executing = false;
@@ -90,8 +91,8 @@ export class SafeJs implements SafeJsOptions {
       this.maxConsoleLog = maxConsoleLog;
     }
 
-    if (setupFunction) {
-      this.setupFunction = setupFunction;
+    if (fetchProxyUrl) {
+      this.fetchProxyUrl = fetchProxyUrl;
     }
 
     this.handleMessages = (msg) => {
@@ -130,7 +131,7 @@ export class SafeJs implements SafeJsOptions {
       maxWorkerReturn: this.maxWorkerReturn,
       extraWhitelist: this.extraWhitelist,
       maxConsoleLog: this.maxConsoleLog,
-      setupFunction: this.setupFunction,
+      fetchProxyUrl: this.fetchProxyUrl,
     };
 
     this.worker.postMessage(firstMessage, [this.channel.port2]);

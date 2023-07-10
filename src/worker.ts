@@ -1,8 +1,15 @@
 import { WorkerInitMessage, WorkerMessage, WorkerMessageType } from "./main";
 
+declare global {
+  interface Window {
+    fetchProxy: any;
+  }
+}
+
 function initialize(
   extraWhitelist: Array<string>,
-  consoleCallback: (m: string | Error) => void
+  consoleCallback: (m: string | Error) => void,
+  fetchProxyUrl?: string
 ) {
   const extraWhitelistObject = {} as any;
   for (const v of extraWhitelist) {
@@ -43,6 +50,7 @@ function initialize(
     undefined: 1,
     Map: 1,
     DOMParser: 1,
+    Proxy: 1,
 
     Intl: 1,
     constructor: 1,
@@ -134,6 +142,20 @@ function initialize(
     }
   };
 
+  // --- Fetch Proxying ---
+  // Adds a special url at the beginning of the fetch to allow for proxying
+  self.fetchProxy = new Proxy(fetch, {
+    apply(target, _thisArg, argArray) {
+      if (fetchProxyUrl) {
+        argArray[0] = fetchProxyUrl + argArray[0];
+      }
+      // @ts-ignore
+      return target(...argArray);
+    },
+  });
+
+  self.fetch = self.fetchProxy;
+
   function removeProto(currentProto: any) {
     Object.getOwnPropertyNames(currentProto).forEach((prop) => {
       // Just for testing
@@ -180,7 +202,11 @@ self.onmessage = async (msg) => {
     MAX_CONSOLE = initMessage.maxConsoleLog;
     port = msg.ports[0];
 
-    initialize(initMessage.extraWhitelist, workerMessages);
+    initialize(
+      initMessage.extraWhitelist,
+      workerMessages,
+      initMessage.fetchProxyUrl
+    );
     return;
   }
 
