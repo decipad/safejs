@@ -19,7 +19,7 @@ const myWorker = new SafeJs(
   (err) => console.error(err),
   {
     maxExecutingTime: 50000,
-    fetchProxyUrl: "a-proxy-url",
+    fetchProxyUrl: "https://mywebsite.com/proxy_endpoint?request=",
   }
 );
 
