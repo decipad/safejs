@@ -33,8 +33,5 @@
   "homepage": "https://github.com/decipad/safejs#readme",
   "files": [
     "./dist/*"
-  ],
-  "dependencies": {
-    "lodash.omit": "^4.5.0"
-  }
+  ]
 }

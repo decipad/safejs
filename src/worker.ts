@@ -1,5 +1,4 @@
 import { WorkerInitMessage, WorkerMessage, WorkerMessageType } from "./main";
-import omit from "lodash.omit";
 
 declare global {
   interface Window {
