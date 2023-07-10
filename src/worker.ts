@@ -145,6 +145,7 @@ function initialize(
       const req = new Request(...originalArgs);
 
       const awaitedBuffer = await req.arrayBuffer();
+      const hasBody = awaitedBuffer.byteLength > 0;
 
       const bodyObject = {
         ...req,
@@ -154,7 +155,7 @@ function initialize(
         headers: Object.fromEntries(req.headers.entries()),
         url: req.url,
 
-        body: _arrayBufferToBase64(awaitedBuffer),
+        ...(hasBody && { body: _arrayBufferToBase64(awaitedBuffer) }),
         isBase64Encoded: true,
       } as MyRequest;
 
