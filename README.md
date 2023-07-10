@@ -23,3 +23,7 @@ If you use a builder, like webpack, you might have to rebuild. This is an exampl
 ```
 pnpm run build
 ```
+
+## Inspiration
+
+This package was partially inspired by (Wumpus World)[https://github.com/Domiii/WumpusGame/blob/master/js/script/GuestScriptContext.js]
