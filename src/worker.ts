@@ -1,10 +1,19 @@
 import { WorkerInitMessage, WorkerMessage, WorkerMessageType } from "./main";
+import omit from "lodash.omit";
 
 declare global {
   interface Window {
     fetchProxy: any;
   }
 }
+
+type MyRequest = Omit<Request, "body" | "headers" | "signal"> & {
+  body: string;
+  isBase64Encoded?: boolean;
+  method: Request["method"];
+  headers: Record<string, string>;
+  signal: never;
+};
 
 function initialize(
   extraWhitelist: Array<string>,
@@ -51,10 +60,13 @@ function initialize(
     Map: 1,
     DOMParser: 1,
     Proxy: 1,
+    btoa: 1,
+    Uint8Array: 1,
 
     Intl: 1,
     constructor: 1,
     fetch: 1,
+    Request: 1,
 
     // Special, because we strip most of it
     console: 1,
@@ -117,6 +129,43 @@ function initialize(
     }
   });
 
+  function _arrayBufferToBase64(buffer: ArrayBuffer) {
+    var binary = "";
+    var bytes = new Uint8Array(buffer);
+    var len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+  const originalFetch = self.fetch;
+
+  if (fetchProxyUrl) {
+    self.fetch = async function (...originalArgs) {
+      const req = new Request(...originalArgs);
+
+      const awaitedBuffer = await req.arrayBuffer();
+
+      const bodyObject = {
+        ...req,
+
+        method: req.method,
+
+        headers: Object.fromEntries(req.headers.entries()),
+        url: req.url,
+
+        body: _arrayBufferToBase64(awaitedBuffer),
+        isBase64Encoded: true,
+      } as MyRequest;
+
+      return originalFetch(fetchProxyUrl, {
+        method: "POST",
+        body: JSON.stringify(bodyObject),
+      });
+    };
+  }
+
   console.log = function (arg) {
     try {
       switch (typeof arg) {
@@ -141,20 +190,6 @@ function initialize(
       consoleCallback(new Error("console.log went wrong somewhere"));
     }
   };
-
-  // --- Fetch Proxying ---
-  // Adds a special url at the beginning of the fetch to allow for proxying
-  self.fetchProxy = new Proxy(fetch, {
-    apply(target, _thisArg, argArray) {
-      if (fetchProxyUrl) {
-        argArray[0] = fetchProxyUrl + argArray[0];
-      }
-      // @ts-ignore
-      return target(...argArray);
-    },
-  });
-
-  self.fetch = self.fetchProxy;
 
   function removeProto(currentProto: any) {
     Object.getOwnPropertyNames(currentProto).forEach((prop) => {
