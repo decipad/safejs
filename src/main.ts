@@ -5,6 +5,7 @@ interface SafeJsOptions {
   maxExecutingTime: number;
   maxConsoleLog: number;
   extraWhitelist: Array<string>;
+  setupFunction: () => void;
 }
 
 export type WorkerInitMessage = Omit<SafeJsOptions, "maxExecutingTime">;
@@ -32,8 +33,10 @@ export interface WorkerMessage {
  * The web worker has no access to DOM or window object, see [MDN Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API), and we go even further by re-writing the `get` method of many web worker function to throw error, making them unusable.
  * We also restrict the `prototype` of the `self` object in the web worker, making the execution of the code safe.
  * There is also a whitelist which allows the web worker to define what functions are allowed (for example decipads usecase needs `fetch`, but you might not want to allow this).
+ *
+ * We provide a setup function, but this is not ran on the main thread, it is ran on the worker side.
  */
-export class SafeJs {
+export class SafeJs implements SafeJsOptions {
   // @ts-ignore - Typescript doesnt seem to know `this.worker` is initialised in a private function.
   private worker: Worker;
   // @ts-ignore - Typescript doesnt seem to know `this.channel` is initialised in a private function.
@@ -47,11 +50,11 @@ export class SafeJs {
   private errorMessageCallback: (err: ErrorMessageType) => void;
   private handleMessages: (msg: any) => void;
 
-  private MAX_WORKER_RETURN: number = 20000;
-  private MAX_EXECUTING_TIME: number = 10000;
-  private maxConsoleLog: number = 200;
-
-  private extraWhitelist: Array<string> = [];
+  public maxWorkerReturn: number = 10000;
+  public maxExecutingTime: number = 20000;
+  public maxConsoleLog: number = 200;
+  public extraWhitelist: Array<string> = [];
+  public setupFunction: () => void = () => {};
 
   /**
    * @param workerMessageCallback
@@ -65,17 +68,18 @@ export class SafeJs {
       maxExecutingTime,
       extraWhitelist,
       maxConsoleLog,
+      setupFunction,
     }: Readonly<Partial<SafeJsOptions>> = {}
   ) {
     this.executing = false;
     this.errorMessageCallback = workerErrorCallback;
 
     if (maxWorkerReturn) {
-      this.MAX_WORKER_RETURN = maxWorkerReturn;
+      this.maxWorkerReturn = maxWorkerReturn;
     }
 
     if (maxExecutingTime) {
-      this.MAX_EXECUTING_TIME = maxExecutingTime;
+      this.maxExecutingTime = maxExecutingTime;
     }
 
     if (extraWhitelist) {
@@ -84,6 +88,10 @@ export class SafeJs {
 
     if (maxConsoleLog) {
       this.maxConsoleLog = maxConsoleLog;
+    }
+
+    if (setupFunction) {
+      this.setupFunction = setupFunction;
     }
 
     this.handleMessages = (msg) => {
@@ -119,9 +127,10 @@ export class SafeJs {
     this.channel = new MessageChannel();
 
     const firstMessage: WorkerInitMessage = {
-      maxWorkerReturn: this.MAX_WORKER_RETURN,
+      maxWorkerReturn: this.maxWorkerReturn,
       extraWhitelist: this.extraWhitelist,
       maxConsoleLog: this.maxConsoleLog,
+      setupFunction: this.setupFunction,
     };
 
     this.worker.postMessage(firstMessage, [this.channel.port2]);
@@ -164,7 +173,7 @@ export class SafeJs {
         this.isAlive = false;
         this.initWorker();
       }
-    }, this.MAX_EXECUTING_TIME);
+    }, this.maxExecutingTime);
 
     const msg: WorkerMessage = {
       code,
