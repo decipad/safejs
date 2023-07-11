@@ -95,7 +95,17 @@ export class SafeJs implements SafeJsOptions {
       this.fetchProxyUrl = fetchProxyUrl;
     }
 
-    this.handleMessages = (msg) => {
+    this.handleMessages = (msg: MessageEvent<SyntaxError | string>) => {
+      this.executing = false;
+
+      if (msg.data instanceof Error) {
+        this.errorMessageCallback({
+          result: new Error(msg.data.message),
+          logs: [],
+        });
+        return;
+      }
+
       try {
         const workerMsg: WorkerMessageType = JSON.parse(msg.data);
         this.executing = false;
