@@ -1,6 +1,6 @@
 import MyWorker from "./worker?worker&inline";
 
-interface SafeJsOptions {
+export interface SafeJsOptions {
   maxWorkerReturn: number;
   maxExecutingTime: number;
   maxConsoleLog: number;
