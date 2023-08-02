@@ -14,98 +14,88 @@ type MyRequest = Omit<Request, "body" | "headers" | "signal"> & {
   signal: never;
 };
 
+function SecureProperty(parent: object, property: string) {
+  try {
+    console.log(property);
+    Object.defineProperty(parent, property, {
+      get() {
+        throw new Error("Security Exception - cannot access: " + property);
+      },
+      configurable: false,
+    });
+  } catch (e) {
+    // Do nothing
+  }
+}
+
 function initialize(
   extraWhitelist: Array<string>,
   consoleCallback: (m: string | Error) => void,
   fetchProxyUrl?: string
 ) {
-  const extraWhitelistObject = {} as any;
-  for (const v of extraWhitelist) {
-    extraWhitelistObject[v] = 1;
-  }
+  const whitelist: string[] = [
+    "self",
+    "postMessage",
+    "global",
+    "whiteList",
+    "Array",
+    "Boolean",
+    "Date",
+    "Function",
+    "Promise",
+    "Number",
+    "Object",
+    "RegExp",
+    "String",
+    "Error",
+    "RangeError",
+    "ReferenceError",
+    "SyntaxError",
+    "TypeError",
+    "URIError",
+    "decodeURI",
+    "decodeURIComponent",
+    "encodeURI",
+    "isFinite",
+    "isNaN",
+    "parseFloat",
+    "parseInt",
+    "Infinity",
+    "JSON",
+    "Math",
+    "Map",
+    "NaN",
+    "undefined",
+    "DOMParser",
+    "btoa",
+    "Uint8Array",
 
-  const whitelist = {
-    self: 1,
-    postMessage: 1,
-    global: 1,
-    whiteList: 1,
-    Array: 1,
-    Boolean: 1,
-    Date: 1,
-    Function: 1,
-    Promise: 1,
-    Number: 1,
-    Object: 1,
-    RegExp: 1,
-    String: 1,
-    Error: 1,
-    RangeError: 1,
-    ReferenceError: 1,
-    SyntaxError: 1,
-    TypeError: 1,
-    URIError: 1,
-    decodeURI: 1,
-    decodeURIComponent: 1,
-    encodeURI: 1,
-    isFinite: 1,
-    isNaN: 1,
-    parseFloat: 1,
-    parseInt: 1,
-    Infinity: 1,
-    JSON: 1,
-    Math: 1,
-    NaN: 1,
-    undefined: 1,
-    Map: 1,
-    DOMParser: 1,
-    Proxy: 1,
-    btoa: 1,
-    Uint8Array: 1,
-
-    Intl: 1,
-    constructor: 1,
-    fetch: 1,
-    Request: 1,
+    "Intl",
+    "constructor",
+    "fetch",
+    "Request",
 
     // Special, because we strip most of it
-    console: 1,
+    "console",
 
-    ...extraWhitelistObject,
-  };
+    ...extraWhitelist,
+  ];
 
-  Object.getOwnPropertyNames(self).forEach((prop) => {
-    if (prop in whitelist) return;
+  /**
+   * Start by stripping the global `self` object of all properties EXCEPT
+   * the ones in the whitelist.
+   */
+  for (const prop in self) {
+    if (whitelist.includes(prop)) {
+      continue;
+    }
 
-    try {
-      Object.defineProperty(self, prop, {
-        get: function () {
-          throw new Error("Security Exception - cannot access: " + prop);
-        },
-        configurable: false,
-      });
-    } catch (e) {}
-  });
-
-  // @ts-ignore
-  Object.defineProperty(Array.prototype, "join", {
-    writable: false,
-    configurable: false,
-    value: (function (old) {
-      // @ts-ignore
-      return function (arg) {
-        // @ts-ignore
-        if (this.length > 500 || (arg && arg.length > 500)) {
-          throw "Exception: too many items";
-        }
-
-        // @ts-ignore
-        return old.apply(this, arguments);
-      };
-    })(Array.prototype.join),
-  });
+    SecureProperty(self, prop);
+  }
 
   const arProt = Array.prototype;
 
+  // Creating an array with too many items, could crash the worker.
   // @ts-ignore
   Array = function (args) {
     if (args && args > 500) {
@@ -113,20 +103,16 @@ function initialize(
     }
     return arProt.constructor(args);
   };
-
   // @ts-ignore
   Array.prototype = arProt;
 
-  Object.getOwnPropertyNames(console).forEach((prop) => {
-    if (prop !== "log") {
-      Object.defineProperty(console, prop, {
-        configurable: false,
-        get: function () {
-          throw new Error("Security Exception - cannot access: " + prop);
-        },
-      });
+  for (const prop in console) {
+    if (prop === "log") {
+      continue;
     }
-  });
+
+    SecureProperty(console, prop);
+  }
 
   function _arrayBufferToBase64(buffer: ArrayBuffer) {
     var binary = "";
@@ -166,6 +152,11 @@ function initialize(
     };
   }
 
+  /**
+   * Overriding console to push onto an array instead.
+   * Otherwise the user can avoid the default console.
+   * And prevents us from displaying them nicely.
+   */
   console.log = function (arg) {
     try {
       switch (typeof arg) {
@@ -193,20 +184,10 @@ function initialize(
 
   function removeProto(currentProto: any) {
     Object.getOwnPropertyNames(currentProto).forEach((prop) => {
-      // Just for testing
       if (prop in whitelist) return;
       if (prop === "self") return;
 
-      try {
-        Object.defineProperty(currentProto, prop, {
-          get: () => {
-            throw new Error("Security Exception - cannot access: " + prop);
-          },
-          configurable: false,
-        });
-      } catch (e) {
-        // console.log(e);
-      }
+      SecureProperty(currentProto, prop);
     });
   }
 
