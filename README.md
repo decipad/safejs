@@ -2,6 +2,10 @@
 
 This repo intends to safely run JavaScript into a website using web workers. It provides a controller class, with some defaults.
 
+## Blog Post Link
+
+[Decipad Blog Link](https://www.decipad.com/blog/introducing-safejs-a-secure-way-to-integrate-data)
+
 ## Usage example
 
 ```ts
@@ -17,10 +21,11 @@ const myWorker = new SafeJs(
   }
 );
 
-myWorker.execute('return "Hello World"')
+myWorker.execute('return "Hello World"');
 ```
 
 ## Parameters
+
 As seen above, the third parameter for the `SafeJS` constructor is a series of options.
 
 ```ts
