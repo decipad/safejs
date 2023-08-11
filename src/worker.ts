@@ -153,7 +153,6 @@ function initialize(
    * Otherwise the user can avoid the default console.
    * And prevents us from displaying them nicely.
    */
-  /*
   console.log = function (arg) {
     try {
       switch (typeof arg) {
@@ -178,7 +177,6 @@ function initialize(
       consoleCallback(new Error("console.log went wrong somewhere"));
     }
   };
-  */
 
   function removeProto(currentProto: any) {
     Object.getOwnPropertyNames(currentProto).forEach((prop) => {
