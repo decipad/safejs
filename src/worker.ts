@@ -16,7 +16,6 @@ type MyRequest = Omit<Request, "body" | "headers" | "signal"> & {
 
 function SecureProperty(parent: object, property: string) {
   try {
-    console.log(property);
     Object.defineProperty(parent, property, {
       get() {
         throw new Error("Security Exception - cannot access: " + property);
@@ -114,24 +113,19 @@ function initialize(
     SecureProperty(console, prop);
   }
 
-  function _arrayBufferToBase64(buffer: ArrayBuffer) {
-    var binary = "";
-    var bytes = new Uint8Array(buffer);
-    var len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  }
-
   const originalFetch = self.fetch;
 
   if (fetchProxyUrl) {
     self.fetch = async function (...originalArgs) {
       const req = new Request(...originalArgs);
 
-      const awaitedBuffer = await req.arrayBuffer();
-      const hasBody = awaitedBuffer.byteLength > 0;
+      let awaitJson = undefined;
+      try {
+        awaitJson = await req.json();
+        console.log(awaitJson);
+      } catch (err) {
+        // Do nothing;
+      }
 
       const bodyObject = {
         ...req,
@@ -141,8 +135,10 @@ function initialize(
         headers: Object.fromEntries(req.headers.entries()),
         url: req.url,
 
-        ...(hasBody && { body: _arrayBufferToBase64(awaitedBuffer) }),
-        isBase64Encoded: true,
+        ...(typeof awaitJson === "string" && {
+          body: JSON.stringify(awaitJson),
+        }),
+        isBase64Encoded: false,
       } as MyRequest;
 
       return originalFetch(fetchProxyUrl, {
@@ -157,6 +153,7 @@ function initialize(
    * Otherwise the user can avoid the default console.
    * And prevents us from displaying them nicely.
    */
+  /*
   console.log = function (arg) {
     try {
       switch (typeof arg) {
@@ -181,6 +178,7 @@ function initialize(
       consoleCallback(new Error("console.log went wrong somewhere"));
     }
   };
+  */
 
   function removeProto(currentProto: any) {
     Object.getOwnPropertyNames(currentProto).forEach((prop) => {
