@@ -135,7 +135,7 @@ function initialize(
         headers: Object.fromEntries(req.headers.entries()),
         url: req.url,
 
-        ...(typeof awaitJson === "string" && {
+        ...(awaitJson != null && {
           body: JSON.stringify(awaitJson),
         }),
         isBase64Encoded: false,
