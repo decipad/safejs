@@ -52,7 +52,7 @@ pnpm link
 Wherever you are using it
 
 ```
-pnpm link "@decipad_org/safejs
+pnpm link "@decipad/safejs
 ```
 
 If you use a builder, like webpack, you might have to rebuild. This is an example of how that might look like (in the safejs repo):
