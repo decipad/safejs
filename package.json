@@ -1,5 +1,5 @@
 {
-  "name": "@decipad_org/safejs",
+  "name": "@decipad/safejs",
   "version": "0.7.1",
   "type": "module",
   "scripts": {
