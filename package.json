@@ -11,7 +11,7 @@
     "@types/lodash.omit": "^4.5.7",
     "@types/node": "^20.1.4",
     "typescript": "^5.0.2",
-    "vite": "^4.3.2",
+    "vite": "~4.3.9",
     "vite-plugin-dts": "^2.3.0"
   },
   "license": "MIT",
