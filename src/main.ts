@@ -51,6 +51,12 @@ export class SafeJs implements SafeJsOptions {
   private errorMessageCallback: (err: ErrorMessageType) => void;
   private handleMessages: (msg: any) => void;
 
+  // Used to allow `execute` to return a promise.
+  private responsePromise?: {
+    resolve: (res?: string) => void;
+    reject: (res?: any) => void;
+  };
+
   public maxWorkerReturn: number = 10000;
   public maxExecutingTime: number = 20000;
   public maxConsoleLog: number = 200;
@@ -70,7 +76,7 @@ export class SafeJs implements SafeJsOptions {
       extraWhitelist,
       maxConsoleLog,
       fetchProxyUrl,
-    }: Readonly<Partial<SafeJsOptions>> = {}
+    }: Readonly<Partial<SafeJsOptions>> = {},
   ) {
     this.executing = false;
     this.errorMessageCallback = workerErrorCallback;
@@ -103,6 +109,8 @@ export class SafeJs implements SafeJsOptions {
           result: new Error(msg.data.message),
           logs: [],
         });
+
+        this.responsePromise?.reject(new Error(msg.data.message));
         return;
       }
 
@@ -112,8 +120,10 @@ export class SafeJs implements SafeJsOptions {
 
         if (typeof workerMsg.result === "string") {
           workerMessageCallback(workerMsg as ResultMessageType);
+          this.responsePromise?.resolve(workerMsg.result);
         } else {
           this.errorMessageCallback(workerMsg as ErrorMessageType);
+          this.responsePromise?.reject(workerMsg.result);
         }
       } catch (err) {
         this.executing = false;
@@ -154,7 +164,10 @@ export class SafeJs implements SafeJsOptions {
    * @param code - The actual JS you want to execute in the worker
    * @returns nothing, because the `workerMessageCallback` will be used to return the result.
    */
-  async execute(code: string, params?: object) {
+  async execute(
+    code: string,
+    params?: object,
+  ): Promise<string | Error | undefined> {
     if (!this.isAlive) {
       this.errorMessageCallback({
         result: new Error("Web worker has been terminated"),
@@ -192,6 +205,13 @@ export class SafeJs implements SafeJsOptions {
     };
 
     this.worker.postMessage(msg);
+
+    return new Promise((resolve, reject) => {
+      this.responsePromise = {
+        resolve,
+        reject,
+      };
+    });
   }
 
   /**
